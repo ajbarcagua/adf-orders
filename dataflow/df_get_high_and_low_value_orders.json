@@ -1,0 +1,128 @@
+{
+	"name": "df_get_high_and_low_value_orders",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_orders_adls_raw",
+						"type": "DatasetReference"
+					},
+					"name": "orders"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_order_items_adls_raw",
+						"type": "DatasetReference"
+					},
+					"name": "orderitems"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_high_value_orders_sink",
+						"type": "DatasetReference"
+					},
+					"name": "highValueOrderSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_low_value_orders_sink",
+						"type": "DatasetReference"
+					},
+					"name": "lowValueOrderSink"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_erroneous_orders_sink",
+						"type": "DatasetReference"
+					},
+					"name": "erroneousValueOrderSink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "getOrderItemSubtotal"
+				},
+				{
+					"name": "joinOrderItemToOrders"
+				},
+				{
+					"name": "removeRedundantOrderId",
+					"description": "="
+				},
+				{
+					"name": "separateOrders",
+					"description": "Group orders based on orders subtotal"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          order_id as string,",
+				"          order_date as string,",
+				"          order_customer_id as string,",
+				"          order_status as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> orders",
+				"source(output(",
+				"          order_item_id as string,",
+				"          order_item_order_id as string,",
+				"          order_item_product_id as string,",
+				"          order_item_quantity as integer,",
+				"          order_item_subtotal as double,",
+				"          order_item_product_price as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> orderitems",
+				"orderitems aggregate(groupBy(order_item_order_id),",
+				"     order_item_subtotal = sum(order_item_subtotal)) ~> getOrderItemSubtotal",
+				"getOrderItemSubtotal, orders join(order_item_order_id == order_id,",
+				"     joinType:'outer',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> joinOrderItemToOrders",
+				"joinOrderItemToOrders select(mapColumn(",
+				"          {Order Id} = order_id,",
+				"          {Customer ID} = order_customer_id,",
+				"          {Order Date} = order_date,",
+				"          {Orders Subtotal} = order_item_subtotal,",
+				"          {Order Status} = order_status",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> removeRedundantOrderId",
+				"removeRedundantOrderId split({Orders Subtotal}>500,",
+				"     {Orders Subtotal}<500,",
+				"     disjoint: false) ~> separateOrders@(highValueOrders, lowValueOrders, others)",
+				"separateOrders@highValueOrders sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> highValueOrderSink",
+				"separateOrders@lowValueOrders sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> lowValueOrderSink",
+				"separateOrders@others sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> erroneousValueOrderSink"
+			]
+		}
+	}
+}

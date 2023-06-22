@@ -1,0 +1,48 @@
+{
+	"name": "ds_order_items_adls_raw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "order_items-220517-190915.csv",
+				"fileSystem": "src"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "order_item_id",
+				"type": "String"
+			},
+			{
+				"name": "order_item_order_id",
+				"type": "String"
+			},
+			{
+				"name": "order_item_product_id",
+				"type": "String"
+			},
+			{
+				"name": "order_item_quantity",
+				"type": "String"
+			},
+			{
+				"name": "order_item_subtotal",
+				"type": "String"
+			},
+			{
+				"name": "order_item_product_price",
+				"type": "String"
+			}
+		]
+	}
+}

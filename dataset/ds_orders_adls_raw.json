@@ -1,0 +1,40 @@
+{
+	"name": "ds_orders_adls_raw",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDataLakeStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "orders-220517-190915.csv",
+				"fileSystem": "src"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "order_id",
+				"type": "String"
+			},
+			{
+				"name": "order_date",
+				"type": "String"
+			},
+			{
+				"name": "order_customer_id",
+				"type": "String"
+			},
+			{
+				"name": "order_status",
+				"type": "String"
+			}
+		]
+	}
+}
